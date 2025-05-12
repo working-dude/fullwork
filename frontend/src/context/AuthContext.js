@@ -1,6 +1,8 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import api from '../utils/api';
 import axios from 'axios';
 
+const API_BASE_URL = 'http://localhost:5000';
 const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
@@ -49,12 +51,11 @@ export const AuthProvider = ({ children }) => {
 
     checkAuth();
   }, []);
-
   // Student login
   const loginStudent = async (username, password) => {
     try {
       setIsLoading(true);
-      const response = await axios.post('/api/student/login', { username, password });
+      const response = await axios.post(`${API_BASE_URL}/api/student/login`, { username, password });
       
       const { accessToken, refreshToken, student } = response.data;
       
@@ -72,12 +73,11 @@ export const AuthProvider = ({ children }) => {
       setIsLoading(false);
     }
   };
-
   // Tutor login
   const loginTutor = async (username, password) => {
     try {
       setIsLoading(true);
-      const response = await axios.post('/api/tutor/login', { username, password });
+      const response = await axios.post(`${API_BASE_URL}/api/tutor/login`, { username, password });
       
       const { tutor } = response.data;
       
@@ -95,11 +95,10 @@ export const AuthProvider = ({ children }) => {
 
   // Logout
   const logout = async (type) => {
-    try {
-      if (type === 'student') {
+    try {      if (type === 'student') {
         const studentId = localStorage.getItem('studentId');
         if (studentId) {
-          await axios.post('/api/student/logout', { studentId });
+          await axios.post(`${API_BASE_URL}/api/student/logout`, { studentId });
         }
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
@@ -116,14 +115,13 @@ export const AuthProvider = ({ children }) => {
       return false;
     }
   };
-
   // Refresh token
   const refreshToken = async () => {
     try {
       const refreshTokenValue = localStorage.getItem('refreshToken');
       if (!refreshTokenValue) return false;
       
-      const response = await axios.post('/api/student/refresh-token', { refreshToken: refreshTokenValue });
+      const response = await axios.post(`${API_BASE_URL}/api/student/refresh-token`, { refreshToken: refreshTokenValue });
       localStorage.setItem('accessToken', response.data.accessToken);
       return true;
     } catch (error) {

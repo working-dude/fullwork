@@ -6,6 +6,42 @@ import './HomePage.css';
 const HomePage = () => {
   const { isAuthenticated, student, tutor } = useAuth();
   
+  // Prepare content based on auth state, but don't use conditional rendering for the main structure
+  let welcomeContent;
+  
+  if (!isAuthenticated) {
+    welcomeContent = (
+      <div className="cta-buttons">
+        <Link to="/student-register" className="cta-button">
+          Register as Student
+        </Link>
+        <Link to="/signup" className="cta-button">
+          Register as Tutor
+        </Link>
+      </div>
+    );
+  } else if (student) {
+    welcomeContent = (
+      <div className="welcome-section">
+        <h2>Welcome back, {student.name || 'Student'}!</h2>
+        <p>Continue your learning journey</p>
+        <Link to="/student-dashboard" className="cta-button">
+          Go to Dashboard
+        </Link>
+      </div>
+    );
+  } else {
+    welcomeContent = (
+      <div className="welcome-section">
+        <h2>Welcome back, {tutor?.name || 'Tutor'}!</h2>
+        <p>Manage your teaching activities</p>
+        <Link to="/teacher/dashboard" className="cta-button">
+          Go to Dashboard
+        </Link>
+      </div>
+    );
+  }
+  
   return (
     <div className="home-container">
       <div className="hero-section">
@@ -14,32 +50,7 @@ const HomePage = () => {
           Connect students and teachers in an interactive learning environment.
         </p>
         
-        {!isAuthenticated ? (
-          <div className="cta-buttons">
-            <Link to="/student-register" className="cta-button">
-              Register as Student
-            </Link>
-            <Link to="/signup" className="cta-button">
-              Register as Tutor
-            </Link>
-          </div>
-        ) : student ? (
-          <div className="welcome-section">
-            <h2>Welcome back, {student.name || 'Student'}!</h2>
-            <p>Continue your learning journey</p>
-            <Link to="/student-dashboard" className="cta-button">
-              Go to Dashboard
-            </Link>
-          </div>
-        ) : (
-          <div className="welcome-section">
-            <h2>Welcome back, {tutor.name || 'Tutor'}!</h2>
-            <p>Manage your teaching activities</p>
-            <Link to="/teacher/dashboard" className="cta-button">
-              Go to Dashboard
-            </Link>
-          </div>
-        )}
+        {welcomeContent}
       </div>
       
       <div className="features-section">
@@ -67,8 +78,7 @@ const HomePage = () => {
           </div>
         </div>
       </div>
-      
-      <div className="how-it-works">
+        <div className="how-it-works">
         <h2>How It Works</h2>
         
         <div className="steps-container">
@@ -88,6 +98,58 @@ const HomePage = () => {
             <div className="step-number">3</div>
             <h3>Connect & Learn</h3>
             <p>Book classes, upload videos, and engage in interactive learning</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="admin-section" style={{ 
+        margin: '40px 0', 
+        padding: '20px', 
+        backgroundColor: '#f5f5f5', 
+        borderRadius: '8px',
+        textAlign: 'center'
+      }}>
+        <h2>Quick Access for Testing</h2>
+        <p>Use these credentials to access the dashboards directly:</p>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          flexWrap: 'wrap', 
+          gap: '20px', 
+          marginTop: '20px' 
+        }}>
+          <div style={{ 
+            padding: '15px', 
+            backgroundColor: '#e6f7ff', 
+            borderRadius: '8px',
+            width: '250px'
+          }}>
+            <h3>Student Access</h3>
+            <p><strong>Username:</strong> admin</p>
+            <p><strong>Password:</strong> admin</p>
+            <Link to="/student-login" className="cta-button" style={{ 
+              display: 'inline-block',
+              marginTop: '10px'
+            }}>
+              Student Login
+            </Link>
+          </div>
+          
+          <div style={{ 
+            padding: '15px', 
+            backgroundColor: '#e6fff7', 
+            borderRadius: '8px',
+            width: '250px'
+          }}>
+            <h3>Tutor Access</h3>
+            <p><strong>Username:</strong> admin</p>
+            <p><strong>Password:</strong> admin</p>
+            <Link to="/login" className="cta-button" style={{ 
+              display: 'inline-block',
+              marginTop: '10px'
+            }}>
+              Tutor Login
+            </Link>
           </div>
         </div>
       </div>

@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
+import TestLogin from './components/TestLogin';
 
 // Pages
 import HomePage from './pages/HomePage';
@@ -26,33 +27,32 @@ import NotFound from './pages/NotFound';
 const ProtectedRoute = ({ children, userType }) => {
   const { student, tutor, isLoading } = useAuth();
   
+  // Don't use conditional returns that might cause hook count mismatch
+  let content = children;
+  
   if (isLoading) {
-    return <div className="container text-center">Loading...</div>;
+    content = <div className="container text-center">Loading...</div>;
+  } else if (userType === 'student' && !student) {
+    content = <Navigate to="/login" />;
+  } else if (userType === 'tutor' && !tutor) {
+    content = <Navigate to="/tutor-login" />;
   }
   
-  if (userType === 'student' && !student) {
-    return <Navigate to="/login" />;
-  }
-  
-  if (userType === 'tutor' && !tutor) {
-    return <Navigate to="/tutor-login" />;
-  }
-  
-  return children;
+  return content;
 };
 
 const App = () => {
   return (
     <>
       <Navbar />
-      <div className="container">
-        <Routes>
+      <div className="container">        <Routes>
           <Route path="/" element={<HomePage />} />
           
           {/* Auth routes */}
           <Route path="/login" element={<StudentLogin />} />
           <Route path="/tutor-login" element={<TutorLogin />} />
           <Route path="/student-register" element={<StudentRegister />} />
+          <Route path="/test-login" element={<TestLogin />} />
           
           {/* Tutor registration flow */}
           <Route path="/signup" element={<TutorRegister />} />

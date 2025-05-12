@@ -195,6 +195,65 @@ router.post('/subjects', authenticateJWT, async (req, res) => {
   }
 });
 
+// Update personal details for tutor registration flow
+router.put('/personal-details', async (req, res) => {
+  try {
+    const { 
+      tutorId, 
+      firstName, 
+      lastName, 
+      email, 
+      phone, 
+      gender, 
+      dob, 
+      bio, 
+      country, 
+      city, 
+      state, 
+      address, 
+      aadhar 
+    } = req.body;
+    
+    if (!tutorId) {
+      return res.status(400).json({ message: 'Tutor ID is required' });
+    }
+    
+    const tutor = await Tutor.findById(tutorId);
+    if (!tutor) {
+      return res.status(404).json({ message: 'Tutor not found' });
+    }
+    
+    // Update tutor information
+    tutor.name = `${firstName} ${lastName}`;
+    tutor.email = email;
+    tutor.city = city;
+    tutor.state = state;
+    tutor.aadhar = aadhar;
+    
+    // Additional fields not in the original schema but useful to store
+    tutor.phone = phone;
+    tutor.gender = gender;
+    tutor.dob = dob;
+    tutor.bio = bio;
+    tutor.country = country;
+    tutor.address = address;
+    
+    await tutor.save();
+    
+    res.status(200).json({
+      message: 'Personal details updated successfully',
+      tutor: {
+        id: tutor._id,
+        name: tutor.name,
+        email: tutor.email
+      }
+    });
+  } catch (error) {
+    console.error('Error updating personal details:', error);
+    res.status(500).json({ message: 'Failed to update personal details', error: error.message });
+  }
+});
+
 // Get all tutors data with class statistics
 router.get('/class-statistics', async (req, res) => {
   try {
@@ -234,6 +293,62 @@ router.get('/class-statistics', async (req, res) => {
     res.json(classStatistics);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+// Handle languages for tutor registration flow
+router.put('/languages', async (req, res) => {
+  try {
+    const { tutorId, nativeLanguage, teachingLanguages } = req.body;
+    
+    if (!tutorId) {
+      return res.status(400).json({ message: 'Tutor ID is required' });
+    }
+    
+    const tutor = await Tutor.findById(tutorId);
+    if (!tutor) {
+      return res.status(404).json({ message: 'Tutor not found' });
+    }
+    
+    // Store languages information
+    tutor.nativeLanguage = nativeLanguage;
+    
+    // Update subjects with language information
+    if (teachingLanguages && teachingLanguages.length > 0) {
+      teachingLanguages.forEach(lang => {
+        // Find or create a subject for this language
+        let subjectExists = false;
+        
+        for (let i = 0; i < tutor.subjects.length; i++) {
+          if (tutor.subjects[i].subject === lang.language) {
+            // Update existing subject
+            subjectExists = true;
+            if (!tutor.subjects[i].language.includes(lang.language)) {
+              tutor.subjects[i].language.push(lang.language);
+            }
+            break;
+          }
+        }
+        
+        if (!subjectExists) {
+          // Add new subject
+          tutor.subjects.push({
+            subject: lang.language,
+            language: [lang.language],
+            views: 0
+          });
+        }
+      });
+    }
+    
+    await tutor.save();
+    
+    res.status(200).json({
+      message: 'Languages updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating languages:', error);
+    res.status(500).json({ message: 'Failed to update languages' });
   }
 });
 

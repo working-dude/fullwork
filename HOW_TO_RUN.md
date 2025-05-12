@@ -2,6 +2,21 @@
 
 This project integrates both student dashboard and teacher dashboard into a single application. Follow these steps to run the application:
 
+## Quick Start (Windows)
+
+We've added a quick start script to make it easier to launch both servers:
+
+1. Double-click the `start-app.bat` file in the integrated-website folder
+2. This will open two command prompts:
+   - One running the backend server on port 5000
+   - One running the frontend server on port 3000
+3. Wait for both servers to start (you'll see confirmation messages)
+4. The frontend should automatically open in your default browser
+
+## Manual Setup
+
+If you prefer to start the servers manually, follow the instructions below.
+
 ## Prerequisites
 - Node.js (v14 or higher)
 - npm or yarn
@@ -52,6 +67,25 @@ Open your browser and visit:
 http://localhost:3000
 ```
 
+## Step 4: Use Demo Accounts
+
+We've created demo accounts for both student and tutor roles:
+
+### Student Demo Account:
+- Username: demo_student
+- Password: password123
+
+### Tutor Demo Account:
+- Username: demo_tutor
+- Password: password123
+
+### Quick Testing Option:
+1. Navigate to: http://localhost:3000/test-login
+2. Use the "Test Student Login" or "Test Tutor Login" buttons
+3. This page will show you the results and verify if the login works correctly
+
+For detailed login instructions, see the [HOW_TO_LOGIN.md](./HOW_TO_LOGIN.md) file.
+
 ## Features
 
 The integrated application includes:
@@ -84,6 +118,28 @@ The integrated application includes:
 3. Upload teaching videos
 4. Manage subjects and courses
 5. Track student attendance and class performance
+
+## Troubleshooting
+
+### Fixed Issues:
+
+#### React Hook Errors:
+We've resolved various React hook errors including:
+
+1. **"Rendered fewer hooks than expected"** errors by:
+   - Updating conditional rendering in components
+   - Ensuring consistent hook calls in all render paths
+   - Using proper patterns for React hooks
+
+2. **"React Hook rules-of-hooks"** errors by:
+   - Converting regular functions that use hooks into proper custom hooks
+   - Following React's naming convention (custom hooks must start with "use")
+   - Using hooks only at the top level of components or other hooks
+
+If you still encounter React hook errors:
+- Check the browser console for specific component errors
+- Make sure you're running the latest code with the fixes
+- Force refresh your browser (Ctrl+F5)
 
 ## API Documentation
 

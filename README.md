@@ -2,6 +2,24 @@
 
 This project integrates both student dashboard and teacher dashboard functionalities into a single application.
 
+## Recent Improvements (May 12, 2025)
+
+### Demo Account Access
+- Added demo student and tutor accounts for easy testing
+- Created a TestLogin component at `/test-login` route to verify login functionality
+- Demo credentials:
+  - Student: `demo_student` / `password123`
+  - Tutor: `demo_tutor` / `password123`
+
+### React Hook Fixes
+- Fixed "Rendered fewer hooks than expected" errors
+- Addressed rules-of-hooks violations in components
+- Improved conditional rendering patterns
+
+### Quick Start
+- Added `start-app.bat` script for easy application startup
+- Enhanced documentation with HOW_TO_LOGIN.md and HOW_TO_RUN.md
+
 ## Project Structure
 
 ```

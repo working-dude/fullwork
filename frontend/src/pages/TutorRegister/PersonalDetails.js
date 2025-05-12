@@ -18,8 +18,7 @@ import {
   MenuItem
 } from '@mui/material';
 
-const PersonalDetails = () => {
-  const [formData, setFormData] = useState({
+const PersonalDetails = () => {  const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
@@ -28,8 +27,10 @@ const PersonalDetails = () => {
     dob: '',
     bio: '',
     country: '',
+    state: '',
     city: '',
-    address: ''
+    address: '',
+    aadhar: ''
   });
   
   const [error, setError] = useState('');
@@ -53,7 +54,6 @@ const PersonalDetails = () => {
       [name]: value
     }));
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -65,6 +65,9 @@ const PersonalDetails = () => {
         throw new Error('Registration session expired. Please start over.');
       }
       
+      // Create name field from firstName and lastName
+      const fullName = `${formData.firstName} ${formData.lastName}`;
+      
       const response = await fetch('/api/tutor/personal-details', {
         method: 'PUT',
         headers: {
@@ -72,7 +75,8 @@ const PersonalDetails = () => {
         },
         body: JSON.stringify({
           tutorId,
-          ...formData
+          ...formData,
+          name: fullName // Send the combined name
         })
       });
       
@@ -213,8 +217,7 @@ const PersonalDetails = () => {
                 onChange={handleChange}
               />
             </Grid>
-            
-            <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={6}>
               <TextField
                 label="City"
                 name="city"
@@ -223,6 +226,32 @@ const PersonalDetails = () => {
                 margin="normal"
                 required
                 value={formData.city}
+                onChange={handleChange}
+              />
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="State"
+                name="state"
+                variant="outlined"
+                fullWidth
+                margin="normal"
+                required
+                value={formData.state}
+                onChange={handleChange}
+              />
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Aadhar Number"
+                name="aadhar"
+                variant="outlined"
+                fullWidth
+                margin="normal"
+                required
+                value={formData.aadhar}
                 onChange={handleChange}
               />
             </Grid>

@@ -27,12 +27,29 @@ const tutorSchema = new mongoose.Schema({
   state: {
     type: String,
     required: true
-  },
-  aadhar: {
+  },  aadhar: {
     type: String,
     required: true
   },
   profileImage: {
+    type: String
+  },
+  phone: {
+    type: String
+  },
+  gender: {
+    type: String
+  },
+  dob: {
+    type: Date
+  },
+  bio: {
+    type: String
+  },
+  country: {
+    type: String
+  },
+  address: {
     type: String
   },
   subjects: [{
