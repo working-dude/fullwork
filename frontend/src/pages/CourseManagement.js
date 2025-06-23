@@ -75,7 +75,7 @@ const CourseManagement = () => {
   const fetchCourses = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/tutor/courses');
+      const response = await api.get('/api/tutor/courses');
       setCourses(response.data);
     } catch (error) {
       console.error('Error fetching courses:', error);
@@ -193,7 +193,7 @@ const CourseManagement = () => {
   
   const handleDeleteConfirm = async () => {
     try {
-      await api.delete(`/tutor/courses/${courseToDelete._id}`);
+      await api.delete(`/api/tutor/courses/${courseToDelete._id}`);
       setCourses(courses.filter(c => c._id !== courseToDelete._id));
       setDeleteDialogOpen(false);
       setCourseToDelete(null);
@@ -206,7 +206,7 @@ const CourseManagement = () => {
   const handlePublishToggle = async (course) => {
     try {
       const updatedCourse = { ...course, isPublished: !course.isPublished };
-      const response = await api.put(`/tutor/courses/${course._id}`, updatedCourse);
+      const response = await api.put(`/api/tutor/courses/${course._id}`, updatedCourse);
       
       // Update courses list with the updated course
       setCourses(courses.map(c => c._id === course._id ? response.data : c));
@@ -223,10 +223,10 @@ const CourseManagement = () => {
       let response;
       
       if (isEditingCourse) {
-        response = await api.put(`/tutor/courses/${currentCourse._id}`, currentCourse);
+        response = await api.put(`/api/tutor/courses/${currentCourse._id}`, currentCourse);
         setCourses(courses.map(c => c._id === currentCourse._id ? response.data : c));
       } else {
-        response = await api.post('/tutor/courses', currentCourse);
+        response = await api.post('/api/tutor/courses', currentCourse);
         setCourses([...courses, response.data]);
       }
       

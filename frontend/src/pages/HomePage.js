@@ -109,49 +109,6 @@ const HomePage = () => {
         borderRadius: '8px',
         textAlign: 'center'
       }}>
-        <h2>Quick Access for Testing</h2>
-        <p>Use these credentials to access the dashboards directly:</p>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          flexWrap: 'wrap', 
-          gap: '20px', 
-          marginTop: '20px' 
-        }}>
-          <div style={{ 
-            padding: '15px', 
-            backgroundColor: '#e6f7ff', 
-            borderRadius: '8px',
-            width: '250px'
-          }}>
-            <h3>Student Access</h3>
-            <p><strong>Username:</strong> admin</p>
-            <p><strong>Password:</strong> admin</p>
-            <Link to="/student-login" className="cta-button" style={{ 
-              display: 'inline-block',
-              marginTop: '10px'
-            }}>
-              Student Login
-            </Link>
-          </div>
-          
-          <div style={{ 
-            padding: '15px', 
-            backgroundColor: '#e6fff7', 
-            borderRadius: '8px',
-            width: '250px'
-          }}>
-            <h3>Tutor Access</h3>
-            <p><strong>Username:</strong> admin</p>
-            <p><strong>Password:</strong> admin</p>
-            <Link to="/login" className="cta-button" style={{ 
-              display: 'inline-block',
-              marginTop: '10px'
-            }}>
-              Tutor Login
-            </Link>
-          </div>
-        </div>
       </div>
     </div>
   );
