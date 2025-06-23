@@ -25,6 +25,7 @@ import {
   Add as AddIcon,
   Delete as DeleteIcon
 } from '@mui/icons-material';
+import api from '../../utils/api';
 
 const PROFICIENCY_LEVELS = [
   { value: 'beginner', label: 'Beginner' },
@@ -89,21 +90,8 @@ const Languages = () => {
     const updatedLanguages = teachingLanguages.filter((_, i) => i !== index);
     setTeachingLanguages(updatedLanguages);
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validate form
-    const emptyLanguages = teachingLanguages.filter(lang => !lang.language.trim());
-    if (emptyLanguages.length > 0) {
-      setError('Please fill in all language fields or remove empty ones');
-      return;
-    }
-    
-    if (!nativeLanguage) {
-      setError('Please select your native language');
-      return;
-    }
     
     setError('');
     setLoading(true);
@@ -114,33 +102,36 @@ const Languages = () => {
         throw new Error('Registration session expired. Please start over.');
       }
       
-      const response = await fetch('/api/tutor/languages', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          tutorId,
-          nativeLanguage,
-          teachingLanguages
-        })
+      // Use default values if no data provided
+      const hasData = nativeLanguage || teachingLanguages.some(lang => lang.language.trim());
+      
+      const finalNativeLanguage = hasData ? nativeLanguage : 'English';
+      const finalTeachingLanguages = hasData && teachingLanguages.some(lang => lang.language.trim()) 
+        ? teachingLanguages.filter(lang => lang.language.trim())
+        : [{ language: 'English', proficiency: 'native', yearsOfExperience: 5 }];
+
+      const response = await api.put('/api/tutor/languages', {
+        tutorId,
+        nativeLanguage: finalNativeLanguage,
+        teachingLanguages: finalTeachingLanguages
       });
       
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to save language information');
+      if (response.status === 200) {
+        // Move to next step in registration process
+        navigate('/experience');
       }
-      
-      // Move to next step in registration process
-      navigate('/experience');
       
     } catch (error) {
       console.error('Error saving languages:', error);
-      setError(error.message || 'Failed to save language information. Please try again.');
+      setError(error.response?.data?.message || 'Failed to save language information. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSkip = () => {
+    // Skip to next step without saving
+    navigate('/experience');
   };
 
   const handleBack = () => {
@@ -273,22 +264,32 @@ const Languages = () => {
             </Grid>
           </Grid>
           
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
-            <Button
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>            <Button
               variant="outlined"
               onClick={handleBack}
             >
               Back
             </Button>
             
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              disabled={loading}
-            >
-              {loading ? 'Saving...' : 'Next: Teaching Experience'}
-            </Button>
+            <Box>
+              <Button
+                variant="text"
+                onClick={handleSkip}
+                disabled={loading}
+                sx={{ mr: 2 }}
+              >
+                Skip
+              </Button>
+              
+              <Button
+                type="submit"
+                variant="contained"
+                color="primary"
+                disabled={loading}
+              >
+                {loading ? 'Saving...' : 'Next: Teaching Experience'}
+              </Button>
+            </Box>
           </Box>
         </Box>
       </Paper>

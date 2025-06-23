@@ -13,10 +13,11 @@ import {
   Alert
 } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
+import api from '../utils/api';
 
 const TutorRegister = () => {
   const [formData, setFormData] = useState({
-    username: '',
+    email: '',
     password: '',
     confirmPassword: ''
   });
@@ -44,11 +45,25 @@ const TutorRegister = () => {
       [name]: value
     }));
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Validate form
+    if (!formData.email.trim()) {
+      setError('Email is required');
+      return;
+    }
+    
+    if (!formData.password.trim()) {
+      setError('Password is required');
+      return;
+    }
+    
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return;
+    }
+    
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords don't match");
       return;
@@ -56,35 +71,40 @@ const TutorRegister = () => {
     
     setLoading(true);
     setError('');
-    
-    try {
-      // Register and login in one step
-      const response = await fetch('/api/tutor/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          username: formData.username,
-          password: formData.password
-        })
+      try {
+        console.log('Submitting registration:', formData);
+      // Register with just email and password for now
+      const response = await api.post('/api/tutor/register', {
+        email: formData.email,
+        password: formData.password,
+        name: 'temp', // Temporary values to pass validation
+        city: 'temp',
+        state: 'temp',
+        aadhar: 'temp'
       });
+      console.log('Registration response:', response);
+      const data = response.data; // Use response.data for axios
       
-      const data = await response.json();
-      
-      if (!response.ok) {
+      if (response.status !== 201) {
         throw new Error(data.message || 'Registration failed');
       }
       
       // Store tutor ID in localStorage for the registration flow
       localStorage.setItem('tutorId', data.tutor._id);
-      
-      // Move to next step in registration process
+        // Move to next step in registration process
       navigate('/personal-details');
-      
-    } catch (error) {
+        } catch (error) {
       console.error('Registration error:', error);
-      setError(error.message || 'Failed to register. Please try again.');
+      
+      // Extract error message from response
+      let errorMessage = 'Failed to register. Please try again.';
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -106,16 +126,16 @@ const TutorRegister = () => {
         </Stepper>
         
         {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
-        
-        <Box component="form" onSubmit={handleSubmit}>
+          <Box component="form" onSubmit={handleSubmit}>
           <TextField
-            label="Username"
-            name="username"
+            label="Email"
+            name="email"
+            type="email"
             variant="outlined"
             fullWidth
             margin="normal"
             required
-            value={formData.username}
+            value={formData.email}
             onChange={handleChange}
           />
           

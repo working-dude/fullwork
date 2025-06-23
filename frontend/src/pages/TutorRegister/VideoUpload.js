@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -14,8 +14,6 @@ import {
   Grid,
   LinearProgress,
   Card,
-  CardContent,
-  FormHelperText,
   CircularProgress,
   FormControl,
   InputLabel,
@@ -23,6 +21,7 @@ import {
   MenuItem
 } from '@mui/material';
 import { CloudUpload as CloudUploadIcon } from '@mui/icons-material';
+import api from '../../utils/api';
 
 const VideoUpload = () => {
   const [videoFile, setVideoFile] = useState(null);
@@ -142,6 +141,11 @@ const VideoUpload = () => {
 
   const handleBack = () => {
     navigate(-1);
+  };
+
+  const handleSkip = () => {
+    // Skip video upload and go to next step
+    navigate('/courses');
   };
 
   return (
@@ -320,6 +324,16 @@ const VideoUpload = () => {
               {loading ? 'Uploading...' : 'Next: Course Details'}
             </Button>
           </Box>
+        </Box>
+        
+        <Box sx={{ mt: 3, textAlign: 'center' }}>
+          <Button
+            variant="text"
+            onClick={handleSkip}
+            disabled={loading}
+          >
+            Skip Video Upload
+          </Button>
         </Box>
       </Paper>
     </Container>

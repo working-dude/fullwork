@@ -31,6 +31,7 @@ import {
   Delete as DeleteIcon,
   Edit as EditIcon
 } from '@mui/icons-material';
+import api from '../../utils/api';
 
 const PROFICIENCY_LEVELS = [
   { value: 'beginner', label: 'Beginner' },
@@ -139,19 +140,8 @@ const Courses = () => {
     if (course.pricePerClass <= 0) return 'Price per class must be greater than 0';
     return null;
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validate all courses
-    for (let i = 0; i < courses.length; i++) {
-      const courseError = validateCourse(courses[i]);
-      if (courseError) {
-        setError(`Course ${i + 1}: ${courseError}`);
-        setCurrentCourseIndex(i);
-        return;
-      }
-    }
     
     setError('');
     setLoading(true);
@@ -162,32 +152,53 @@ const Courses = () => {
         throw new Error('Registration session expired. Please start over.');
       }
       
-      const response = await fetch('/api/tutor/courses', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          tutorId,
-          courses
-        })
-      });
+      // Only validate courses that have content
+      const nonEmptyCourses = courses.filter(course => 
+        course.title.trim() || course.description.trim() || course.language.trim()
+      );
       
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to save course information');
+      // If there are courses with content, validate them
+      for (let i = 0; i < nonEmptyCourses.length; i++) {
+        const courseError = validateCourse(nonEmptyCourses[i]);
+        if (courseError) {
+          const originalIndex = courses.indexOf(nonEmptyCourses[i]);
+          setError(`Course ${originalIndex + 1}: ${courseError}`);
+          setCurrentCourseIndex(originalIndex);
+          return;
+        }
       }
       
-      // Complete registration
-      navigate('/success');
+      // Use default course if no data provided
+      const finalCourses = nonEmptyCourses.length > 0 ? nonEmptyCourses : [{
+        title: 'General Teaching Course',
+        description: 'Comprehensive teaching course covering various topics',
+        language: 'English',
+        level: 'beginner',
+        topics: ['Basic Concepts', 'Practical Applications', 'Advanced Topics'],
+        durationInWeeks: 4,
+        pricePerClass: 50
+      }];
+
+      const response = await api.post('/api/tutor/courses', {
+        tutorId,
+        courses: finalCourses
+      });
+      
+      if (response.status === 200 || response.status === 201) {
+        // Complete registration
+        navigate('/success');
+      }
       
     } catch (error) {
       console.error('Error saving courses:', error);
-      setError(error.message || 'Failed to save course information. Please try again.');
+      setError(error.response?.data?.message || 'Failed to save course information. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+  const handleSkip = () => {
+    // Skip courses and go to success page
+    navigate('/success');
   };
 
   const handleBack = () => {
@@ -394,8 +405,7 @@ const Courses = () => {
             </Card>
           </Grid>
         </Grid>
-        
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
           <Button
             variant="outlined"
             onClick={handleBack}
@@ -403,15 +413,26 @@ const Courses = () => {
             Back
           </Button>
           
-          <Button
-            type="button"
-            variant="contained"
-            color="primary"
-            onClick={handleSubmit}
-            disabled={loading}
-          >
-            {loading ? 'Saving...' : 'Complete Registration'}
-          </Button>
+          <Box>
+            <Button
+              variant="text"
+              onClick={handleSkip}
+              disabled={loading}
+              sx={{ mr: 2 }}
+            >
+              Skip
+            </Button>
+            
+            <Button
+              type="button"
+              variant="contained"
+              color="primary"
+              onClick={handleSubmit}
+              disabled={loading}
+            >
+              {loading ? 'Saving...' : 'Complete Registration'}
+            </Button>
+          </Box>
         </Box>
       </Paper>
     </Container>

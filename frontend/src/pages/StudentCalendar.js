@@ -10,7 +10,7 @@ import {
   CardContent,
   CircularProgress,
   Alert,
-  TextField,
+  // TextField,
   Dialog,
   DialogActions,
   DialogContent,
@@ -23,7 +23,13 @@ import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 
 // Calendar date cell styling
-const CalendarDate = styled(Box)(({ theme, isCurrentMonth, isToday, hasClasses, isSelected }) => ({
+const CalendarDate = styled(
+  Box,
+  {
+    shouldForwardProp: (prop) =>
+      !['isCurrentMonth', 'isToday', 'hasClasses', 'isSelected'].includes(prop)
+  }
+)(({ theme, isCurrentMonth, isToday, hasClasses, isSelected }) => ({
   width: '100%',
   height: '100%',
   cursor: 'pointer',
@@ -143,11 +149,11 @@ const StudentCalendar = () => {
     const fetchClasses = async () => {
       try {
         setLoading(true);
-        const response = await api.get('/student/classes');
-        setClasses(response.data);
+        // const response = await api.get('/api/student/classes');
+        // setClasses(response.data);
         
         // Update calendar days with class information
-        updateCalendarWithClasses(response.data);
+        // updateCalendarWithClasses(response.data);
       } catch (error) {
         console.error('Error fetching classes:', error);
         setError('Failed to load classes data. Please try again later.');

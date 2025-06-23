@@ -3,11 +3,11 @@ const bcrypt = require('bcrypt');
 
 // Define the student schema
 const studentSchema = new mongoose.Schema({
-  username: { 
+  email: { 
     type: String, 
     required: true, 
     unique: true 
-  }, // Phone number as username
+  },
   password: { 
     type: String, 
     required: true 

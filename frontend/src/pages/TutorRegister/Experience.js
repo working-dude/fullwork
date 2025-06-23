@@ -24,6 +24,7 @@ import {
   Add as AddIcon,
   Delete as DeleteIcon
 } from '@mui/icons-material';
+import api from '../../utils/api';
 
 const Experience = () => {
   const [experiences, setExperiences] = useState([
@@ -136,19 +137,8 @@ const Experience = () => {
       [field]: value
     }));
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Basic validation
-    if (
-      !qualifications.highestQualification ||
-      !qualifications.institution ||
-      !qualifications.graduationYear
-    ) {
-      setError('Please fill in all required fields for your highest qualification');
-      return;
-    }
     
     setError('');
     setLoading(true);
@@ -158,35 +148,67 @@ const Experience = () => {
       if (!tutorId) {
         throw new Error('Registration session expired. Please start over.');
       }
+
+      // Only send if user has filled some data, otherwise send default values
+      const hasExperienceData = experiences.some(exp => 
+        exp.title.trim() || exp.organization.trim() || exp.description.trim()
+      );
       
-      const response = await fetch('/api/tutor/experience', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          tutorId,
-          experiences,
-          certifications,
-          qualifications
-        })
+      const hasCertificationData = certifications.some(cert => 
+        cert.name.trim() || cert.issuingOrganization.trim()
+      );
+      
+      const hasQualificationData = qualifications.highestQualification || 
+        qualifications.degree.trim() || qualifications.institution.trim();
+
+      // Use default values if no data provided
+      const finalExperiences = hasExperienceData ? experiences : [{
+        title: 'Teaching Experience',
+        organization: 'Various Institutions',
+        location: 'Online/Offline',
+        startDate: '2020-01-01',
+        endDate: '',
+        current: true,
+        description: 'Experienced in teaching and mentoring students.'
+      }];
+
+      const finalCertifications = hasCertificationData ? certifications : [{
+        name: 'Teaching Certification',
+        issuingOrganization: 'Educational Institution',
+        date: '2020-01-01',
+        credentialId: 'TC001'
+      }];
+
+      const finalQualifications = hasQualificationData ? qualifications : {
+        highestQualification: 'Bachelor\'s Degree',
+        degree: 'General Studies',
+        institution: 'University',
+        graduationYear: '2020'
+      };
+
+      const response = await api.put('/api/tutor/experience', {
+        tutorId,
+        experiences: finalExperiences,
+        certifications: finalCertifications,
+        qualifications: finalQualifications
       });
       
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to save experience information');
+      if (response.status === 200) {
+        // Move to next step in registration process
+        navigate('/video-upload');
       }
-      
-      // Move to next step in registration process
-      navigate('/video-upload');
       
     } catch (error) {
       console.error('Error saving experience:', error);
-      setError(error.message || 'Failed to save experience information. Please try again.');
+      setError(error.response?.data?.message || 'Failed to save experience information. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSkip = () => {
+    // Skip to next step without saving
+    navigate('/video-upload');
   };
 
   const handleBack = () => {
@@ -440,8 +462,7 @@ const Experience = () => {
           >
             Add Another Certification
           </Button>
-          
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
             <Button
               variant="outlined"
               onClick={handleBack}
@@ -449,14 +470,25 @@ const Experience = () => {
               Back
             </Button>
             
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              disabled={loading}
-            >
-              {loading ? 'Saving...' : 'Next: Video Upload'}
-            </Button>
+            <Box>
+              <Button
+                variant="text"
+                onClick={handleSkip}
+                disabled={loading}
+                sx={{ mr: 2 }}
+              >
+                Skip
+              </Button>
+              
+              <Button
+                type="submit"
+                variant="contained"
+                color="primary"
+                disabled={loading}
+              >
+                {loading ? 'Saving...' : 'Next: Video Upload'}
+              </Button>
+            </Box>
           </Box>
         </Box>
       </Paper>

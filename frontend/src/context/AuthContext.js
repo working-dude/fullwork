@@ -1,8 +1,8 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import api from '../utils/api';
+// import api from '../utils/api';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = 'http://localhost:3000';
 const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
@@ -21,15 +21,15 @@ export const AuthProvider = ({ children }) => {
         const refreshToken = localStorage.getItem('refreshToken');
         const studentInfo = localStorage.getItem('studentInfo');
         const tutorInfo = localStorage.getItem('tutorInfo');
-        
+
         if (studentInfo) {
           setStudent(JSON.parse(studentInfo));
         }
-        
+
         if (tutorInfo) {
           setTutor(JSON.parse(tutorInfo));
         }
-        
+
         if (accessToken && refreshToken && !studentInfo) {
           // Token exists but no student info - fetch from API
           const studentId = localStorage.getItem('studentId');
@@ -52,18 +52,18 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
   }, []);
   // Student login
-  const loginStudent = async (username, password) => {
+  const loginStudent = async (email, password) => {
     try {
       setIsLoading(true);
-      const response = await axios.post(`${API_BASE_URL}/api/student/login`, { username, password });
-      
+      const response = await axios.post(`${API_BASE_URL}/api/student/login`, { email, password });
+      console.log('Login response:', response.data);
       const { accessToken, refreshToken, student } = response.data;
-      
+
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('studentId', student._id);
       localStorage.setItem('studentInfo', JSON.stringify(student));
-      
+
       setStudent(student);
       return true;
     } catch (error) {
@@ -74,15 +74,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
   // Tutor login
-  const loginTutor = async (username, password) => {
+  const loginTutor = async (email, password) => {
     try {
       setIsLoading(true);
-      const response = await axios.post(`${API_BASE_URL}/api/tutor/login`, { username, password });
-      
+      const response = await axios.post(`${API_BASE_URL}/api/tutor/login`, { email, password });
+
       const { tutor } = response.data;
-      
+
       localStorage.setItem('tutorInfo', JSON.stringify(tutor));
-      
+
       setTutor(tutor);
       return true;
     } catch (error) {
@@ -95,10 +95,15 @@ export const AuthProvider = ({ children }) => {
 
   // Logout
   const logout = async (type) => {
-    try {      if (type === 'student') {
+    try {
+      if (type === 'student') {
         const studentId = localStorage.getItem('studentId');
+        console.log('Logging out student with ID:', studentId);
+        console.log('localStorage before logout:', localStorage);
+        // Call API to log out student
+        console.log("api call to logout student", `${API_BASE_URL}/api/student/logout`, { studentId });
         if (studentId) {
-          await axios.post(`${API_BASE_URL}/api/student/logout`, { studentId });
+          await axios.post(`${API_BASE_URL}/api/student/logout`, { _id: studentId });
         }
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
@@ -120,7 +125,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const refreshTokenValue = localStorage.getItem('refreshToken');
       if (!refreshTokenValue) return false;
-      
+
       const response = await axios.post(`${API_BASE_URL}/api/student/refresh-token`, { refreshToken: refreshTokenValue });
       localStorage.setItem('accessToken', response.data.accessToken);
       return true;
@@ -141,6 +146,6 @@ export const AuthProvider = ({ children }) => {
     refreshToken,
     isAuthenticated: !!(student || tutor)
   };
-  
+
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

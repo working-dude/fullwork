@@ -17,6 +17,7 @@ import {
   Select,
   MenuItem
 } from '@mui/material';
+import api from '../../utils/api';
 
 const PersonalDetails = () => {  const [formData, setFormData] = useState({
     firstName: '',
@@ -67,27 +68,16 @@ const PersonalDetails = () => {  const [formData, setFormData] = useState({
       
       // Create name field from firstName and lastName
       const fullName = `${formData.firstName} ${formData.lastName}`;
-      
-      const response = await fetch('/api/tutor/personal-details', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          tutorId,
-          ...formData,
-          name: fullName // Send the combined name
-        })
+        const response = await api.put('/api/tutor/personal-details', {
+        tutorId,
+        ...formData,
+        name: fullName // Send the combined name
       });
       
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to save personal details');
+      if (response.status === 200) {
+        // Move to next step in registration process
+        navigate('/languages');
       }
-      
-      // Move to next step in registration process
-      navigate('/languages');
       
     } catch (error) {
       console.error('Error saving personal details:', error);

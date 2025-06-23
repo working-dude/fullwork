@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const multer = require('multer');
+const jwt = require('jsonwebtoken');
 const path = require('path');
 const fs = require('fs');
 const Tutor = require('../models/Tutor');
@@ -35,7 +36,7 @@ const upload = multer({
   limits: { fileSize: 100 * 1024 * 1024 }, // 100MB limit for videos
   fileFilter: (req, file, cb) => {
     if (file.fieldname === 'profileImage') {
-      if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+      if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/i)) { // <-- add 'i' here
         return cb(new Error('Only image files are allowed!'), false);
       }
     } else if (file.fieldname === 'video') {
@@ -50,12 +51,12 @@ const upload = multer({
 // Tutor Login Route
 router.post('/login', async (req, res) => {
   try {
-    const { username, password } = req.body;
-    console.log(`Login attempt for username: ${username}`);
+    const { email, password } = req.body;
+    console.log(`Login attempt for email: ${email}`);
 
-    const tutor = await Tutor.findOne({ username });
+    const tutor = await Tutor.findOne({ email });
     if (!tutor) {
-      console.log(`User not found: ${username}`);
+      console.log(`User not found: ${email}`);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
@@ -64,17 +65,18 @@ router.post('/login', async (req, res) => {
     console.log(`Password comparison result: ${isMatch}`);
 
     if (!isMatch) {
-      console.log(`Password mismatch for user: ${username}`);
+      console.log(`Password mismatch for user: ${email}`);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
-
     const tutorInfo = tutor.toObject();
     delete tutorInfo.password;
-
-    console.log(`Login successful for: ${username}`);
+    // Generate JWT token
+    const token = jwt.sign({ id: tutor._id, role: tutor.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    console.log(`Login successful for: ${email}`);
     res.status(200).json({
       message: 'Login successful',
-      tutor: tutorInfo
+      tutor: tutorInfo,
+      token
     });
   } catch (err) {
     console.error('Login error:', err);
@@ -86,21 +88,17 @@ router.post('/login', async (req, res) => {
 router.post('/register', upload.fields([
   { name: 'profileImage', maxCount: 1 },
   { name: 'aadhar', maxCount: 1 }
-]), async (req, res) => {
-  try {
-    const { username, password, name, email, city, state } = req.body;
-    
-    // Check if username already exists
-    const existingUsername = await Tutor.findOne({ username });
-    if (existingUsername) {
-      return res.status(400).json({ message: 'Username already exists' });
-    }
+]), async (req, res) => {  try {
+    const { email, password, name, city, state } = req.body;
     
     // Check if email already exists
     const existingEmail = await Tutor.findOne({ email });
     if (existingEmail) {
       return res.status(400).json({ message: 'Email already exists' });
     }
+    
+    // Hash password before saving
+    // const hashedPassword = await bcrypt.hash(password, 10);
     
     // Process profile image if uploaded
     let profileImagePath = null;
@@ -113,21 +111,27 @@ router.post('/register', upload.fields([
     if (req.files && req.files.aadhar) {
       aadharPath = req.files.aadhar[0].path;
     }
-    
+    console.log(`Aadhar document path: ${aadharPath}`);
     // Create new tutor
     const newTutor = new Tutor({
-      username,
-      password,
-      name,
       email,
+      password: password,
+      name,
       city,
       state,
       aadhar: aadharPath || req.body.aadhar,
       profileImage: profileImagePath
     });
-    
+    console.log(`New tutor registration: ${newTutor}, Email: ${email}`);
     await newTutor.save();
-    res.status(201).json({ message: 'Tutor registered successfully' });
+    res.status(201).json({ 
+      message: 'Tutor registered successfully',
+      tutor: {
+        _id: newTutor._id,
+        email: newTutor.email,
+        name: newTutor.name
+      }
+    });
   } catch (err) {
     console.error("Registration error:", err);
     res.status(500).json({ message: "Registration failed" });
@@ -139,14 +143,12 @@ router.post('/videos', authenticateJWT, upload.single('video'), async (req, res)
   try {
     const { title, description, subject, language } = req.body;
     const tutorId = req.user.id;
-    
     const tutor = await Tutor.findById(tutorId);
     if (!tutor) {
       return res.status(404).json({ message: 'Tutor not found' });
     }
     
     const videoPath = req.file.path;
-    
     tutor.videos.push({
       title,
       description,
@@ -154,7 +156,6 @@ router.post('/videos', authenticateJWT, upload.single('video'), async (req, res)
       subject,
       language
     });
-    
     await tutor.save();
     res.status(201).json({
       message: 'Video added successfully',
@@ -171,7 +172,7 @@ router.post('/subjects', authenticateJWT, async (req, res) => {
   try {
     const { subjects } = req.body;
     const tutorId = req.user.id;
-    
+
     const tutor = await Tutor.findById(tutorId);
     if (!tutor) {
       return res.status(404).json({ message: 'Tutor not found' });
@@ -183,8 +184,9 @@ router.post('/subjects', authenticateJWT, async (req, res) => {
     } else {
       return res.status(400).json({ message: 'Subjects must be an array' });
     }
-    
+    console.log(`Updating subjects for tutor: ${tutor.name}`);
     await tutor.save();
+    console.log(`Subjects to update:`, subjects);
     res.status(200).json({
       message: 'Subjects updated successfully',
       subjects: tutor.subjects
@@ -383,6 +385,77 @@ router.get('/views-statistics', async (req, res) => {
     res.json(viewsStatistics);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+// Handle experience for tutor registration flow
+router.put('/experience', async (req, res) => {
+  try {
+    const { tutorId, experiences, certifications, qualifications } = req.body;
+    
+    if (!tutorId) {
+      return res.status(400).json({ message: 'Tutor ID is required' });
+    }
+    
+    const tutor = await Tutor.findById(tutorId);
+    if (!tutor) {
+      return res.status(404).json({ message: 'Tutor not found' });
+    }
+    
+    // Store experience information
+    tutor.experience = experiences;
+    tutor.certifications = certifications;
+    tutor.qualifications = qualifications;
+    
+    await tutor.save();
+    
+    res.status(200).json({
+      message: 'Experience updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating experience:', error);
+    res.status(500).json({ message: 'Failed to update experience' });
+  }
+});
+
+// Handle courses for tutor registration flow
+router.post('/courses', async (req, res) => {
+  try {
+    const { tutorId, courses } = req.body;
+    
+    if (!tutorId) {
+      return res.status(400).json({ message: 'Tutor ID is required' });
+    }
+    
+    const tutor = await Tutor.findById(tutorId);
+    if (!tutor) {
+      return res.status(404).json({ message: 'Tutor not found' });
+    }
+    
+    // Process courses and add them to the tutor's subjects
+    if (courses && courses.length > 0) {
+      // Clear existing subjects and add new ones from courses
+      tutor.subjects = courses.map(course => ({
+        subject: course.title,
+        language: [course.language],
+        level: course.level,
+        topics: course.topics,
+        durationInWeeks: course.durationInWeeks,
+        pricePerClass: course.pricePerClass,
+        description: course.description,
+        views: 0
+      }));
+    }
+    
+    await tutor.save();
+    
+    res.status(200).json({
+      message: 'Courses updated successfully',
+      courses: tutor.subjects
+    });
+  } catch (error) {
+    console.error('Error updating courses:', error);
+    res.status(500).json({ message: 'Failed to update courses' });
   }
 });
 

@@ -57,12 +57,12 @@ const ClassRegistration = () => {
         setLoading(true);
         
         // Fetch available classes
-        const classesResponse = await api.get('/student/available-classes');
-        setAvailableClasses(classesResponse.data);
-        setFilteredClasses(classesResponse.data);
+        // const classesResponse = await api.get('/api/student/available-classes');
+        // setAvailableClasses(classesResponse.data);
+        // setFilteredClasses(classesResponse.data);
         
         // Fetch tutors for filtering
-        const tutorsResponse = await api.get('/student/tutors');
+        const tutorsResponse = await api.get('/api/student/all-tutors');
         setTutors(tutorsResponse.data);
         
       } catch (error) {

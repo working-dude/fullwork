@@ -42,16 +42,17 @@ const StudentDashboard = () => {
       try {
         setLoading(true);
         // Fetch upcoming classes
-        const classesResponse = await api.get('/student/upcoming-classes');
-        setUpcomingClasses(classesResponse.data);
+        // const classesResponse = await api.get('/api/student/upcoming-classes');
+        // setUpcomingClasses(classesResponse.data);
         
         // Fetch enrolled courses
-        const coursesResponse = await api.get('/student/enrolled-courses');
+        console.log('Fetching enrolled courses for student:', student?._id);
+        const coursesResponse = await api.get(`/api/student/registered-classes/${student?._id}`);
         setEnrolledCourses(coursesResponse.data);
         
         // Fetch course recommendations
-        const recommendationsResponse = await api.get('/student/recommendations');
-        setRecommendations(recommendationsResponse.data);
+        // const recommendationsResponse = await api.get('/api/student/recommendations');
+        // setRecommendations(recommendationsResponse.data);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
         setError('Failed to load dashboard data. Please try again later.');

@@ -2,11 +2,6 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 
 const tutorSchema = new mongoose.Schema({
-  username: {
-    type: String,
-    required: true,
-    unique: true
-  },
   password: {
     type: String,
     required: true
@@ -18,7 +13,6 @@ const tutorSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
-    unique: true
   },
   city: {
     type: String,

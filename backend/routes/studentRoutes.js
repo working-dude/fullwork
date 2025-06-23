@@ -10,29 +10,28 @@ const { check, validationResult } = require('express-validator');
 
 // Student Registration Route
 router.post('/register', [
-  check('username').isLength({ min: 3 }).withMessage('Username must be at least 3 characters'),
+  check('email').isLength({ min: 3 }).withMessage('email must be at least 3 characters'),
   check('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
 ], async (req, res) => {
-  console.log(req.body);
+  console.log("Received registration request:", req.body);
 
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { username, password, ...studentData } = req.body;
-
+  const { email, password, ...studentData } = req.body;
   try {
-    // Check for existing username
-    const existingStudent = await Student.findOne({ username });
+    // Check for existing email
+    const existingStudent = await Student.findOne({ email });
     if (existingStudent) {
       return res.status(400).json({ 
-        message: 'Username already exists'
+        message: 'email already exists'
       });
     }
-
+    console.log("Creating new student with email:", email);
     const newStudent = new Student({
-      username,
+      email,
       password,
       ...studentData
     });
@@ -41,7 +40,7 @@ router.post('/register', [
     
     // Create JWT token for immediate login
     const accessToken = jwt.sign(
-      { id: newStudent._id, username: newStudent.username, role: 'student' },
+      { id: newStudent._id, email: newStudent.email, role: 'student' },
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
@@ -51,7 +50,7 @@ router.post('/register', [
       accessToken,
       student: {
         id: newStudent._id,
-        username: newStudent.username,
+        email: newStudent.email,
         name: newStudent.name,
         localLanguage: newStudent.localLanguage,   
         motherLanguage: newStudent.motherLanguage, 
@@ -66,14 +65,14 @@ router.post('/register', [
 
 // Student Login Route
 router.post('/login', async (req, res) => {
-  const { username, password } = req.body;
+  const { email, password } = req.body;
 
-  if (!username || !password) {
-    return res.status(400).json({ message: 'Username and password are required' });
+  if (!email || !password) {
+    return res.status(400).json({ message: 'email and password are required' });
   }
 
   try {
-    const student = await Student.findOne({ username });
+    const student = await Student.findOne({ email });
     if (!student) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
@@ -87,7 +86,7 @@ router.post('/login', async (req, res) => {
     const accessToken = jwt.sign(
       {
         id: student._id,
-        username: student.username,
+        email: student.email,
         role: 'student',
       },
       process.env.JWT_SECRET,
@@ -97,7 +96,7 @@ router.post('/login', async (req, res) => {
     // Refresh token (7d expiry)
     const refreshToken = jwt.sign(
       { id: student._id },
-      process.env.JWT_REFRESH_SECRET,
+      process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
 
@@ -112,7 +111,7 @@ router.post('/login', async (req, res) => {
       refreshToken,
       student: {
         _id: student._id,
-        username: student.username,
+        email: student.email,
         name: student.name,
       },
     });
@@ -132,7 +131,7 @@ router.post('/refresh-token', async (req, res) => {
 
   try {
     // Verify the refresh token
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
     const student = await Student.findById(decoded.id);
     
     if (!student || student.refreshToken !== refreshToken) {
@@ -141,7 +140,7 @@ router.post('/refresh-token', async (req, res) => {
 
     // Generate a new access token
     const accessToken = jwt.sign(
-      { id: student._id, username: student.username, role: 'student' },
+      { id: student._id, email: student.email, role: 'student' },
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
@@ -157,11 +156,12 @@ router.post('/refresh-token', async (req, res) => {
 // Logout Route
 router.post('/logout', async (req, res) => {
   try {
-    const { studentId } = req.body; 
-    const student = await Student.findById(studentId);
+    console.log("Received logout request:", req.body);
+    const { _id } = req.body; 
+    const student = await Student.findById(_id);
     
     if (student) {
-      student.refreshToken = null;  // Clear the refresh token on logout
+      student.refreshToken = null;
       await student.save();
       res.status(200).json({ message: 'Logged out successfully' });
     } else {
@@ -176,13 +176,13 @@ router.post('/logout', async (req, res) => {
 // Get student profile
 router.get('/profile', async (req, res) => {
   try {
-    const { studentId } = req.query;
+    const { student_id } = req.body;
 
-    if (!studentId) {
-      return res.status(400).json({ message: 'Missing studentId' });
+    if (!student_id) {
+      return res.status(400).json({ message: 'Missing student _id' });
     }
 
-    const student = await Student.findById(studentId).select('-password');
+    const student = await Student.findById(student_id).select('-password');
 
     if (!student) {
       return res.status(404).json({ message: 'Student not found' });
@@ -192,6 +192,102 @@ router.get('/profile', async (req, res) => {
   } catch (error) {
     console.error('Error fetching student profile:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Book Trial Class Route
+router.post('/book-trial-class', async (req, res) => {
+  const { tutor_id, student_id } = req.body;
+  console.log("Booking trial class for student:", student_id, "with tutor:", tutor_id);
+  try {
+    const student = await Student.findById(student_id);
+    if (!student) return res.status(404).json({ message: 'Student not found' });
+    const tutor = await Tutor.findById(tutor_id);
+    if (!tutor) return res.status(404).json({ message: 'Tutor not found' });
+    // Check if the student already has a trial class booked with this tutor
+    const existingTrial = await Booking.findOne({
+      studentId: student_id,
+      tutorId: tutor_id,
+      trialClass: true,
+    });
+    if (existingTrial) {
+      return res.status(400).json({ message: 'Trial class already booked with this tutor' });
+    }
+    // Trial class booking logic here
+    const newTrialBooking = new Booking({
+      tutorId: tutor_id,
+      studentId: student_id,
+      classTime: new Date(), // Set to current time for trial class
+      trialClass: true,
+      status: 'present', // Initial status
+    });
+    await newTrialBooking.save();
+    res.status(200).json({ message: 'Trial class booked successfully!' });
+  } catch (error) {
+    console.error('Error booking trial class:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Route to handle class booking
+router.post('/book-class', authenticateJWT, async (req, res) => {
+  const { tutor_id, classTime, trialClass, student_id } = req.body;
+  console.log("Booking class for student:", student_id, "with tutor:", tutor_id, "at time:", classTime);
+  try {
+    const existingBooking = await Booking.findOne({ studentId: student_id, classTime });
+    if (existingBooking) {
+      return res.status(400).json({ message: 'You already have a class booked at this time.' });
+    }
+    console.log("Here");
+    const newBooking = new Booking({
+      tutorId: tutor_id,
+      studentId: student_id,
+      classTime,
+      trialClass,
+    });
+
+    await newBooking.save();
+    console.log("New booking created:", newBooking);
+    res.status(201).json({
+      message: 'Class booked successfully!',
+      booking: newBooking,
+    });
+  } catch (error) {
+    console.error('Error saving booking:', error);
+    res.status(500).json({ message: 'Error saving booking. Please try again later.' });
+  }
+});
+
+// Get registered classes for a student
+router.get('/registered-classes/:_id', async (req, res) => {
+  try {
+    const { _id } = req.params;
+    
+    if (!_id) {
+      return res.status(400).json({ message: 'Missing student _id' });
+    }
+
+    const bookings = await Booking.find({ studentId: _id })
+      .populate('tutorId', 'name location languages courses')
+      .sort({ classTime: 1 })
+      .lean();
+
+    const registeredClasses = bookings.map(booking => ({
+      id: booking._id,
+      classTime: booking.classTime,
+      status: booking.status,
+      trialClass: booking.trialClass,
+      classLink: booking.classLink,
+      tutor: booking.tutorId || { name: 'Unknown Tutor' }
+    }));
+
+    res.status(200).json({ 
+      count: registeredClasses.length,
+      registeredClasses 
+    });
+  } catch (error) {
+    console.error('Error fetching registered classes:', error);
+    res.status(500).json({ message: 'Server error fetching registered classes.' });
   }
 });
 
@@ -255,23 +351,6 @@ router.post('/search-tutors', async (req, res) => {
   }
 });
 
-// Book Trial Class Route
-router.post('/book-trial-class', async (req, res) => {
-  const { tutorId, studentId } = req.body;
-
-  try {
-    const student = await Student.findById(studentId);
-
-    if (!student) return res.status(404).json({ message: 'Student not found' });
-
-    // Trial class booking logic here
-    res.status(200).json({ message: 'Trial class booked successfully!' });
-  } catch (error) {
-    console.error('Error booking trial class:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
 // Get All Tutors Route
 router.get('/all-tutors', async (req, res) => {
   try {
@@ -280,73 +359,6 @@ router.get('/all-tutors', async (req, res) => {
   } catch (error) {
     console.error('Error fetching all tutors:', error);
     res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Route to handle class booking
-router.post('/book-class', authenticateJWT, async (req, res) => {
-  const { tutorId, classTime, trialClass } = req.body;
-  const studentId = req.body.studentId;
-
-  try {
-    // Check if there's already a booking at the same time
-    const existingBooking = await Booking.findOne({ studentId, classTime });
-    if (existingBooking) {
-      return res.status(400).json({ message: 'You already have a class booked at this time.' });
-    }
-
-    // Create new booking
-    const newBooking = new Booking({
-      tutorId,
-      studentId,
-      classTime,
-      trialClass,
-    });
-
-    await newBooking.save();
-
-    res.status(201).json({
-      message: 'Class booked successfully!',
-      booking: newBooking,
-    });
-  } catch (error) {
-    console.error('Error saving booking:', error);
-    res.status(500).json({ message: 'Error saving booking. Please try again later.' });
-  }
-});
-
-// Get registered classes for a student
-router.get('/registered-classes/:studentId', async (req, res) => {
-  try {
-    const { studentId } = req.params;
-    
-    if (!studentId) {
-      return res.status(400).json({ message: 'Missing student ID' });
-    }
-
-    // Fetch bookings with tutor information
-    const bookings = await Booking.find({ studentId })
-      .populate('tutorId', 'name location languages courses')
-      .sort({ classTime: 1 })
-      .lean();
-
-    // Format response data
-    const registeredClasses = bookings.map(booking => ({
-      id: booking._id,
-      classTime: booking.classTime,
-      status: booking.status,
-      trialClass: booking.trialClass,
-      classLink: booking.classLink,
-      tutor: booking.tutorId || { name: 'Unknown Tutor' }
-    }));
-
-    res.status(200).json({ 
-      count: registeredClasses.length,
-      registeredClasses 
-    });
-  } catch (error) {
-    console.error('Error fetching registered classes:', error);
-    res.status(500).json({ message: 'Server error fetching registered classes.' });
   }
 });
 

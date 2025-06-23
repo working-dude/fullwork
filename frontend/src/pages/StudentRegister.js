@@ -16,7 +16,7 @@ import api from '../utils/api';
 
 const StudentRegister = () => {
   const [formData, setFormData] = useState({
-    username: '',
+    email: '',
     password: '',
     confirmPassword: '',
     name: '',
@@ -72,8 +72,8 @@ const StudentRegister = () => {
     setError('');
     
     try {
-      const response = await api.post('/student/register', {
-        username: formData.username,
+      const response = await api.post('/api/student/register', {
+        email: formData.email,
         password: formData.password,
         name: formData.name,
         dob: formData.dob,
@@ -117,12 +117,12 @@ const StudentRegister = () => {
             {/* Basic Information */}
             <Grid item xs={12} md={6}>
               <TextField
-                name="username"
-                label="Phone Number (Username)"
+                name="email"
+                label="email"
                 fullWidth
                 required
                 margin="normal"
-                value={formData.username}
+                value={formData.email}
                 onChange={handleChange}
               />
             </Grid>

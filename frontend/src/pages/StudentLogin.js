@@ -4,7 +4,7 @@ import { TextField, Button, Paper, Typography, Container, Box, Alert } from '@mu
 import { useAuth } from '../context/AuthContext';
 
 const StudentLogin = () => {
-  const [username, setUsername] = useState('');
+  const [email, setemail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -18,7 +18,7 @@ const StudentLogin = () => {
     setLoading(true);
     
     try {
-      const success = await loginStudent(username, password);
+      const success = await loginStudent(email, password);
       if (success) {
         navigate('/student-dashboard');
       } else {
@@ -42,11 +42,11 @@ const StudentLogin = () => {
         
         <Box component="form" onSubmit={handleLogin} sx={{ mt: 2 }}>
           <TextField
-            label="Username (Phone Number)"
+            label="email "
             fullWidth
             margin="normal"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            value={email}
+            onChange={(e) => setemail(e.target.value)}
             required
             autoFocus
           />
